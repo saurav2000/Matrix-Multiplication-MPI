@@ -1,23 +1,18 @@
-#include <cstdio>
-#include <iostream>
-#include <chrono>
-#include <fstream>
-#include <mpi.h>
-#include <ctime>
 #include "matrixMult.h"
 
 using namespace std;
 
-int main(int argc, char const *argv[])
+void singlePointerChunks(int argc, char *argv[])
 {
 	Init(&argc, &argv);
-	int n = stoi(argv[1]);
+	int n = stoi(argv[1]);;
 	double *A = (double*)malloc(32 * n * sizeof(double));
 	double *B = (double*)malloc(32 * n * sizeof(double));
 	double *C = (double*)malloc(n * n * sizeof(double));
-	double *C_serial = (double*)malloc(n * n * sizeof(double));
+	double *C_ser = (double*)malloc(n * n * sizeof(double));
 
-	int rank, status, size;
+	int rank, size;
+	Status status;
 	MPI_Comm_rank(WORLD, &rank);
 	MPI_Comm_size(WORLD, &size);
 
@@ -25,7 +20,7 @@ int main(int argc, char const *argv[])
 	{
 		// Initialising A and B
 		srand(time(NULL));
-		for(int i=0;i<m;++i)
+		for(int i=0;i<n;++i)
 		{
 			for(int j=0;j<32;++j)
 			{
@@ -34,29 +29,121 @@ int main(int argc, char const *argv[])
 			}
 		}
 		
+		auto start = std::chrono::high_resolution_clock::now();
 		// Sending B to all cores
 		for(int i=1;i<size;++i)
-			Send(B, n*32, Double, i, MPI_ANY_TAG, WORLD);
+			Send(B, n*32, DOUBLE, i, 0, WORLD);
 
 		// Sending A in chunks and then receving chunks of C
 		int chunk_size = n/size, offset = n%size;
+
 		for(int i=1;i<size;++i)
-			Send(A+offset+i*chunk_size, chunk_size, Double, i, MPI_ANY_TAG, WORLD);
+		{
+			Send(&chunk_size, 1, INT, i, 0, WORLD);
+			Send(A+((offset+i*chunk_size)*32), chunk_size*32, DOUBLE, i, 0, WORLD);
+		}
 		
+		// Calculating the first part
+		matrixMultiply(A, B, C, offset+chunk_size, 32, n);
+		// Receiving other parts
+		for(int i=1;i<size;++i)
+			Recv(C+((offset+i*chunk_size)*n), chunk_size*n, DOUBLE, i, 0, WORLD, &status);
+		
+		auto end = std::chrono::high_resolution_clock::now();
+		cout<<n<<"\n";
+		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
+
+		start = std::chrono::high_resolution_clock::now();
+		matrixMultiply(A, B, C_ser, n, 32, n);
+		end = std::chrono::high_resolution_clock::now();
+		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";		
+		cout<<isEqual(C, C_ser, n, n)<<"\n";
 	}
 	else
 	{
-
+		Recv(B, n*32, DOUBLE, 0, 0, WORLD, &status);
+		int chunk_size;
+		Recv(&chunk_size, 1, INT, 0, 0, WORLD, &status);
+		Recv(A, chunk_size*32, DOUBLE, 0, 0, WORLD, &status);
+		matrixMultiply(A, B, C, chunk_size, 32, n);
+		Send(C, chunk_size*n, DOUBLE, 0, 0, WORLD);
 	}
-	
 
+	Finalize();
+}
 
-	auto start = std::chrono::high_resolution_clock::now();
-	matrixMultiply(A, B, C, n, 32, n);
-	auto end = std::chrono::high_resolution_clock::now();
-	double time = std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count();
-	cout<<time<<"\n";
+void singlePointerRows(int argc, char *argv[])
+{
+	Init(&argc, &argv);
+	int n = stoi(argv[1]);;
+	double *A = (double*)malloc(32 * n * sizeof(double));
+	double *B = (double*)malloc(32 * n * sizeof(double));
+	double *C = (double*)malloc(n * n * sizeof(double));
+	double *C_ser = (double*)malloc(n * n * sizeof(double));
 
-	// Finalize();
+	int rank, size;
+	Status status;
+	MPI_Comm_rank(WORLD, &rank);
+	MPI_Comm_size(WORLD, &size);
+
+	if(rank==0)
+	{
+		// Initialising A and B
+		srand(time(NULL));
+		for(int i=0;i<n;++i)
+		{
+			for(int j=0;j<32;++j)
+			{
+				A[i*32 + j] = drand48();
+				B[j*n + i] = drand48();
+			}
+		}
+		
+		auto start = std::chrono::high_resolution_clock::now();
+		// Sending B to all cores
+		for(int i=1;i<size;++i)
+			Send(B, n*32, DOUBLE, i, 0, WORLD);
+
+		// Sending A in chunks and then receving chunks of C
+		int chunk_size = n/size, offset = n%size;
+
+		for(int i=1;i<size;++i)
+		{
+			Send(&chunk_size, 1, INT, i, 0, WORLD);
+			Send(A+((offset+i*chunk_size)*32), chunk_size*32, DOUBLE, i, 0, WORLD);
+		}
+		
+		// Calculating the first part
+		matrixMultiply(A, B, C, offset+chunk_size, 32, n);
+		// Receiving other parts
+		for(int i=1;i<size;++i)
+			Recv(C+((offset+i*chunk_size)*n), chunk_size*n, DOUBLE, i, 0, WORLD, &status);
+		
+		auto end = std::chrono::high_resolution_clock::now();
+		cout<<n<<"\n";
+		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
+
+		start = std::chrono::high_resolution_clock::now();
+		matrixMultiply(A, B, C_ser, n, 32, n);
+		end = std::chrono::high_resolution_clock::now();
+		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";		
+		cout<<isEqual(C, C_ser, n, n)<<"\n";
+	}
+	else
+	{
+		Recv(B, n*32, DOUBLE, 0, 0, WORLD, &status);
+		int chunk_size;
+		Recv(&chunk_size, 1, INT, 0, 0, WORLD, &status);
+		Recv(A, chunk_size*32, DOUBLE, 0, 0, WORLD, &status);
+		matrixMultiply(A, B, C, chunk_size, 32, n);
+		Send(C, chunk_size*n, DOUBLE, 0, 0, WORLD);
+	}
+
+	Finalize();
+}
+
+int main(int argc, char *argv[])
+{
+	singlePointerChunks(argc, argv);
 	return 0;
 }
