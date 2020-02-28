@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include "matrixMult.h"
 
 using namespace std;
@@ -9,7 +10,6 @@ int main(int argc, char *argv[])
 	double *A = (double*)malloc(32 * n * sizeof(double));
 	double *B = (double*)malloc(32 * n * sizeof(double));
 	double *C = (double*)malloc(n * n * sizeof(double));
-	double *C_ser = (double*)malloc(n * n * sizeof(double));
 
 	int rank, size;
 	Status status;
@@ -55,14 +55,7 @@ int main(int argc, char *argv[])
 			Wait(&request_recv[i], &status);
 
 		auto end = std::chrono::high_resolution_clock::now();
-		cout<<n<<"\n";
 		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
-
-		start = std::chrono::high_resolution_clock::now();
-		matrixMultiply(A, B, C_ser, n, 32, n);
-		end = std::chrono::high_resolution_clock::now();
-		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";		
-		cout<<isEqual(C, C_ser, n, n)<<"\n";
 	}
 	else
 	{
