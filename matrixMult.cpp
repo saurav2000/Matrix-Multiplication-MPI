@@ -51,3 +51,27 @@ void matrixMultiply(double *A, double *B, double *C, int m, int n, int p)
 		}
 	}
 }
+
+void writeToFile(double *mat, int m, int n, char *file)
+{
+	std::ofstream fout(file);
+	for(int i=0;i<m;++i)
+	{
+		for(int j=0;j<n;++j)
+			fout<<mat[i*n + j]<<" ";
+		fout<<"\n";
+	}
+	fout.close();
+}
+
+void writeToFile(double **mat, int m, int n, char *file)
+{
+	std::ofstream fout(file);
+	for(int i=0;i<m;++i)
+	{
+		for(int j=0;j<n;++j)
+			fout<<mat[i][j]<<" ";
+		fout<<"\n";
+	}
+	fout.close();
+}
