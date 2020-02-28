@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 	double *A = (double*)malloc(32 * n * sizeof(double));
 	double *B = (double*)malloc(32 * n * sizeof(double));
 	double *C = (double*)malloc(n * n * sizeof(double));
+	double *C_ser = (double*)malloc(n * n * sizeof(double));
 
 	int rank, size;
 	Status status;
@@ -55,6 +56,10 @@ int main(int argc, char *argv[])
 			Wait(&request_recv[i], &status);
 
 		auto end = std::chrono::high_resolution_clock::now();
+
+		// Serial Multiplication
+		matrixMultiply(A, B, C_ser, n, 32, n);
+		cout<<isEqual(C, C_ser, n, n)<<"\n";
 
 		// Printing Time Taken
 		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";

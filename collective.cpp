@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 	double *A = (double*)malloc(32 * n * sizeof(double));
 	double *B = (double*)malloc(32 * n * sizeof(double));
 	double *C = (double*)malloc(n * n * sizeof(double));
+	double *C_ser = (double*)malloc(n * n * sizeof(double));	
 
 	int rank, size;
 	Status status;
@@ -62,9 +63,15 @@ int main(int argc, char *argv[])
 	Gatherv(C, count_arr[rank], DOUBLE, C, count_arr, displs, DOUBLE, 0, WORLD);
 	auto end = std::chrono::high_resolution_clock::now();
 
-	// Printing Time Taken
 	if(rank==0)
+	{
+		// Serial Multiplication
+		matrixMultiply(A, B, C_ser, n, 32, n);
+		cout<<isEqual(C, C_ser, n, n)<<"\n";
+
+		// Printing Time Taken
 		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
+	}
 	
 	Finalize();
 	return 0;
