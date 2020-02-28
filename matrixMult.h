@@ -2,7 +2,6 @@
 #include <iostream>
 #include <chrono>
 #include <fstream>
-#include <mpi.h>
 #include <ctime>
 
 #define WORLD MPI_COMM_WORLD
@@ -25,5 +24,5 @@ bool isEqual(double **A, double **B, int m, int n);
 bool isEqual(double *A, double *B, int m, int n);
 void matrixMultiply(double **A, double **B, double **C, int m, int n, int p);
 void matrixMultiply(double *A, double *B,  double *C, int m, int n, int p);
-void printToFile(double **mat, int m, int n, char *file);
-void printToFile(double *mat, int m, int n, char *file);
+void writeToFile(double **mat, int m, int n, char *file);
+void writeToFile(double *mat, int m, int n, char *file);
