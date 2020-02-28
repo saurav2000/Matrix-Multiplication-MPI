@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 	Scatterv(A, count_arr, displs, DOUBLE, A, count_arr[rank], DOUBLE, 0, WORLD);
 
-	// Multiplying scatterv
+	// Multiplying data from scatterv
 	matrixMultiply(A, B, C, count_arr[rank]/32, 32, n);
 
 	// Changing count and displacements for Gather
@@ -62,10 +62,9 @@ int main(int argc, char *argv[])
 	Gatherv(C, count_arr[rank], DOUBLE, C, count_arr, displs, DOUBLE, 0, WORLD);
 	auto end = std::chrono::high_resolution_clock::now();
 
-	
+	// Printing Time Taken
 	if(rank==0)
 		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
-	
 	
 	Finalize();
 	return 0;

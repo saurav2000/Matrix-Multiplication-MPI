@@ -55,18 +55,29 @@ int main(int argc, char *argv[])
 			Wait(&request_recv[i], &status);
 
 		auto end = std::chrono::high_resolution_clock::now();
+
+		// Printing Time Taken
 		cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
 	}
 	else
 	{
 		Request req1, req2, req3;
+		// Receiving B
 		Irecv(B, n*32, DOUBLE, 0, 0, WORLD, &req1);
 		int chunk_size;
+
+		// Receiving for chunk size 
 		Irecv(&chunk_size, 1, INT, 0, 0, WORLD, &req2);
 		Wait(&req2, &status);
+
+		// Receiving A
 		Irecv(A, chunk_size*32, DOUBLE, 0, 0, WORLD, &req3);
+
+		// Waiting for A and B
 		Wait(&req1, &status);
 		Wait(&req3, &status);
+
+		// Multiplication and sending C
 		matrixMultiply(A, B, C, chunk_size, 32, n);
 		Isend(C, chunk_size*n, DOUBLE, 0, 0, WORLD, &req1);
 	}

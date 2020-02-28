@@ -10,6 +10,7 @@ int main(int argc, char const *argv[])
 	double *B = (double*)malloc(32 * n * sizeof(double));
 	double *C = (double*)malloc(n * n * sizeof(double));
 
+	// Initialising A and B
 	srand(time(NULL));
 	for(int i=0;i<n;++i)
 	{
@@ -20,9 +21,12 @@ int main(int argc, char const *argv[])
 		}
 	}
 
+	// Matrix Multiplication
 	auto start = std::chrono::high_resolution_clock::now();
 	matrixMultiply(A, B, C, n, 32, n);
 	auto end = std::chrono::high_resolution_clock::now();
+
+	// Printing Time Taken
 	cout<<n<<"\n";
 	cout<<std::chrono::duration_cast<std::chrono::duration<double> >(end - start).count()<<"\n";
 	return 0;
